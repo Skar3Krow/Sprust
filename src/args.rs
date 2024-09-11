@@ -14,6 +14,6 @@ pub enum CommandType {
 
 #[derive(Debug, Args)]
 pub struct CheckerArguments {
-    /// some function which is supposed to do something
-    pub some_func: bool,
+    /// Some word to be to be spell checked
+    pub word_to_be: &str,
 }
