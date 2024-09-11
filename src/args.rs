@@ -1,7 +1,7 @@
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
-pub struct SpellChecker {
+pub struct CliArgument {
     #[clap(subcommand)]
     pub command_type: CommandType,
 }
@@ -15,5 +15,5 @@ pub enum CommandType {
 #[derive(Debug, Args)]
 pub struct CheckerArguments {
     /// Some word to be to be spell checked
-    pub word_to_be: &str,
+    pub word_to_be: String,
 }
