@@ -2,55 +2,127 @@
 mod algorithms; // Contains all the algorithms that are used
 mod args; // Contains the structure in which are arguments are to be parsed
 
-use std::fs::File;
-use std::io::{self, BufRead, Result};
-
-// Function Imports
+// Funciton Imports
 use algorithms::levenshtein;
 use args::{CliArgument, CommandType};
+use clap::builder::FalseyValueParser;
 use clap::Parser;
+use core::str;
+use std::collections::HashMap;
+use std::fs::File;
+use std::hash::Hash;
+use std::io::{self, BufRead, Result};
+use std::usize;
+
+// Trie Node defined here [Move to new file later]
+#[derive(Default, Debug)]
+struct TrieNode {
+    pub is_end_of_word: bool,
+    pub child: HashMap<char, TrieNode>,
+}
+
+#[derive(Debug, Default)]
+struct Trie {
+    pub root: TrieNode,
+}
+
+#[allow(dead_code)]
+impl Trie {
+    fn new() -> Self {
+        Trie {
+            root: TrieNode::default(),
+        }
+    }
+
+    fn insert(&mut self, word: &str) {
+        let mut cur_node = &mut self.root;
+        for c in word.chars() {
+            cur_node = cur_node.child.entry(c).or_default();
+        }
+        cur_node.is_end_of_word = true;
+    }
+
+    fn contains(&self, word: &str) -> bool {
+        let mut cur_node = &self.root;
+        for i in word.chars() {
+            match cur_node.child.get(&i) {
+                Some(node) => cur_node = node,
+                None => return false,
+            }
+        }
+        cur_node.is_end_of_word
+    }
+}
 
 struct SpellChecker {
     /// File name with the words that are writtens
-    dictionary: Vec<String>,
+    dictionary: Trie,
 }
 
 impl SpellChecker {
     fn new() -> Result<Self> {
-        let mut set_dictionary: Vec<String> = Vec::new();
+        let mut set_dictionary: Trie = Trie::new();
         let f = File::open("data/dictionary.txt")?;
         let lines = io::BufReader::new(f).lines();
         for line in lines {
-            set_dictionary.push(line?);
+            if let Ok(word) = line {
+                set_dictionary.insert(&word);
+            }
         }
         Ok(Self {
             dictionary: set_dictionary,
         })
     }
 
-    fn suggestinator(&self, checked_word: &str) -> Result<(Vec<(&str, usize)>, usize)> {
-        let mut suggestions: Vec<(&str, usize)> = Vec::new();
+    fn trie_dfs(
+        &self,
+        node: &TrieNode,
+        target_word: &str,
+        current_word: &mut String,
+        suggestions: &mut Vec<String>,
+        line_number: &usize,
+    ) {
+        if node.is_end_of_word && levenshtein(&current_word, &target_word) == 1 {
+            suggestions.push(current_word.clone());
+        }
+        for (&ch, next_node) in &node.child {
+            current_word.push(ch);
+            self.trie_dfs(
+                next_node,
+                target_word,
+                current_word,
+                suggestions,
+                line_number,
+            );
+            current_word.pop();
+        }
+    }
+
+    fn suggestinator(&self, checked_word: &str) -> Result<(HashMap<Vec<String>, usize>, usize)> {
         let mut word_counter = 0;
+        let mut block: HashMap<Vec<String>, usize> = HashMap::new();
         let file = File::open(checked_word)?;
         let lines = io::BufReader::new(file).lines();
         for (index, line) in lines.enumerate() {
             let mut liner = line?;
             liner.retain(|c| !r#"(),".;:'"#.contains(c));
             for word in liner.split_whitespace() {
-                word_counter+=1;
-                for i in &self.dictionary {
-                    let lev_dist = levenshtein(word, i);
-                    if lev_dist == 0 {
-                        continue;
-                    } else if lev_dist == 1 {
-                        suggestions.push((i, index));
-
-                    }
-                }
+                word_counter += 1;
+                let mut current_word = String::new();
+                let mut suggestions: Vec<String> = Vec::new();
+                suggestions.push(word.to_string());
+                self.trie_dfs(
+                    &self.dictionary.root,
+                    &word,
+                    &mut current_word,
+                    &mut suggestions,
+                    &index,
+                );
+                block.insert(suggestions.clone(), index);
             }
         }
 
-        Ok((suggestions, word_counter))
+        Ok((block, word_counter))
     }
 }
 fn main() {
@@ -59,12 +131,20 @@ fn main() {
         CommandType::Check(checkargument) => {
             let spell_dictionary = SpellChecker::new().unwrap();
             match spell_dictionary.suggestinator(&checkargument.word_to_be) {
-                Ok((some_vec, total_words)) => {
-                    for (word, index) in some_vec.iter() {
-                        println!("Error on line {:?} : {:?}", index, word);
+                Ok((some_hash, total_words)) => {
+                    for (suggestions, line_no) in some_hash {
+                        if suggestions.len() > 1 {
+                            let wrong = &suggestions[0];
+                            let mut new_list = suggestions.clone();
+                            new_list.remove(0);
+                            println!(
+                                "Line: {:?} - Error: {:?} : Suggestions : {:?}",
+                                line_no, wrong, new_list
+                            );
+                        }
                     }
                     println!("Total words: {:?}", total_words);
-                },
+                }
                 Err(e) => eprintln!("Error Occured: {:?}", e),
             }
         }
@@ -91,13 +171,13 @@ Steps:
 1. Make basic structure of the program. [Done]
 2. Make a functioning spellchecker with a small dictionary set and only checks one word. [Done]
 3. Expand the one word capability to one file capability. [Done]
-4. Use Trie Data Structures to compress that large dataset into smaller space [Performace Boost]. [Ongoing]
-    a. Create a program to add all the words in the dictionary dataset into the trie data structure.
-    b. Tweak levenshtein to make it favourible to search in trie data structures.
-5. Use Bloom Filters to store words more efficiently [Save Storage].
+4. Use Trie Data Structures to compress that large dataset into smaller space [Performace Boost]. [Done]
+    a. Create a program to add all the words in the dictionary dataset into the trie data structure. [Done]
+5. Use Bloom Filters to store words more efficiently [Save Storage] [Ongoing]
 6. Add Features:
-    a. Functionality which allows you to add words to your dictionary.
-    b. Show the total amount of words in a text file.
-    c. See if Demarau-Levenshtein algorithm or Bitap algorithm will be better for your use case.
-    d. Complete the full API checklist.
+    a. Functionality which allows you to add words to your dictionary. [Done]
+    b. Show the total amount of words in a text file. [Done]
+    c. See if Demaru-Levenshtein algorithm or Bitap algorithm will be better for this use case.
+    d. Complete the full API checklist
+
 */
