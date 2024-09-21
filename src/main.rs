@@ -5,14 +5,11 @@ mod args; // Contains the structure in which are arguments are to be parsed
 // Funciton Imports
 use algorithms::levenshtein;
 use args::{CliArgument, CommandType};
-use clap::builder::FalseyValueParser;
 use clap::Parser;
 use core::str;
 use std::collections::HashMap;
 use std::fs::File;
-use std::hash::Hash;
 use std::io::{self, BufRead, Result};
-use std::usize;
 
 // Trie Node defined here [Move to new file later]
 #[derive(Default, Debug)]
@@ -62,12 +59,10 @@ struct SpellChecker {
 impl SpellChecker {
     fn new() -> Result<Self> {
         let mut set_dictionary: Trie = Trie::new();
-        let f = File::open("data/dictionary.txt")?;
+        let f = File::open("data/words_alpha.txt")?;
         let lines = io::BufReader::new(f).lines();
         for line in lines {
-            if let Ok(word) = line {
-                set_dictionary.insert(&word);
-            }
+            set_dictionary.insert(&line?);
         }
         Ok(Self {
             dictionary: set_dictionary,
@@ -108,6 +103,9 @@ impl SpellChecker {
             liner.retain(|c| !r#"(),".;:'"#.contains(c));
             for word in liner.split_whitespace() {
                 word_counter += 1;
+                if self.dictionary.contains(&word) {
+                    continue;
+                }
                 let mut current_word = String::new();
                 let mut suggestions: Vec<String> = Vec::new();
                 suggestions.push(word.to_string());
@@ -150,34 +148,3 @@ fn main() {
         }
     }
 }
-
-/*
-Prerequisites:
-
-Algorithms [Fuzzy]:
-1. Levenshtein Algorithms [Minimum operations required to convert one word to another word] -- Done
-2. Damerau-Levenshtein [Better than Levenshtein ???]
-
-Datasets:
-1. Dictionary Datasets [American English]  //Expand to more datasets after one works
-
-Data Structures:
-1. Trie : To store compressed form of your dataset and also reduces number of iterations
-2. Bloom Filters: To efficiently store words with least memory usage
-
-
-Steps:
-
-1. Make basic structure of the program. [Done]
-2. Make a functioning spellchecker with a small dictionary set and only checks one word. [Done]
-3. Expand the one word capability to one file capability. [Done]
-4. Use Trie Data Structures to compress that large dataset into smaller space [Performace Boost]. [Done]
-    a. Create a program to add all the words in the dictionary dataset into the trie data structure. [Done]
-5. Use Bloom Filters to store words more efficiently [Save Storage] [Ongoing]
-6. Add Features:
-    a. Functionality which allows you to add words to your dictionary. [Done]
-    b. Show the total amount of words in a text file. [Done]
-    c. See if Demaru-Levenshtein algorithm or Bitap algorithm will be better for this use case.
-    d. Complete the full API checklist
-
-*/
