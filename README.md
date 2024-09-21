@@ -15,7 +15,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 3. Cloning the Repository:
 ```
 git clone https://github.com/Skar3Krow/Sprust.git
-cd spellchecker
+cd Sprust
 ```
 
 4. Building the Project:
