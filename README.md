@@ -75,7 +75,7 @@ sprust check <filepath>
 ```
 - Description: Finds out the incorrect word in given file and suggest correct words.
 - Parameters:
-- - file_path: The file path of the file to be spell checked
+  - file_path: The file path of the file to be spell checked
 - Return: Spelling mistakes and their suggestions.
 
 ## 4. Example Usage
