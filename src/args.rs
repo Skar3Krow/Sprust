@@ -10,10 +10,17 @@ pub struct CliArgument {
 pub enum CommandType {
     /// Checks the file for spelling errors and mistakes
     Check(CheckerArguments),
+    Is(IsArgument),
 }
 
 #[derive(Debug, Args)]
 pub struct CheckerArguments {
-    /// Some word to be to be spell checked
+    /// Some file ot be spell checked
     pub word_to_be: String,
+}
+
+#[derive(Debug, Args)]
+pub struct IsArgument {
+    /// To check if the word is real or not.
+    pub word_to_check: String,
 }
