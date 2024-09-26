@@ -1,3 +1,4 @@
+// Local Imports
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -10,6 +11,7 @@ pub struct CliArgument {
 pub enum CommandType {
     /// Checks the file for spelling errors and mistakes
     Check(CheckerArguments),
+    /// Checks if a word exists or not and give suggestions on misspelled words
     Is(IsArgument),
 }
 

@@ -4,6 +4,7 @@ mod args; // Contains the structure in which are arguments are to be parsed
 mod spellchecker; // Contains the spell checker function
 mod utils; // Contains Data Structure Implimentation
 
+// Function Imports
 use args::{CliArgument, CommandType};
 use clap::Parser;
 use spellchecker::SpellChecker;
@@ -32,13 +33,25 @@ fn main() {
             }
         }
         CommandType::Is(word_argument) => {
-            if spell_dictionary
+            match spell_dictionary
                 .dictionary
-                .contains(&word_argument.word_to_check)
+                .contains(&word_argument.word_to_check.to_lowercase())
             {
-                println!("Yes!!, {:?} is a real word", word_argument.word_to_check);
-            } else {
-                println!("Word doesn't exist");
+                true => println!("Yes!!, {:?} is a real word", word_argument.word_to_check),
+                false => {
+                    let mut current_word = String::new();
+                    let mut suggestion = Vec::new();
+                    spell_dictionary.trie_dfs(
+                        &spell_dictionary.dictionary.root,
+                        &word_argument.word_to_check.to_lowercase(),
+                        &mut current_word,
+                        &mut suggestion,
+                    );
+                    match suggestion.len() {
+                        0 => println!("This word does not correlate with any word in English"),
+                        _ => println!("Word misspelled...\nMaybe you mean: {:?}", suggestion),
+                    }
+                }
             }
         }
     }

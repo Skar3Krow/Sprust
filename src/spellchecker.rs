@@ -1,8 +1,8 @@
-//Local Imports
-use crate::algorithms::levenshtein;
+// Local Imports
+use crate::algorithms::damerau_levenshtein;
 use crate::utils::{Trie, TrieNode};
 
-//Functional Imports
+// Functional Imports
 use core::str;
 use std::collections::HashMap;
 use std::fs::File;
@@ -32,20 +32,13 @@ impl SpellChecker {
         target_word: &str,
         current_word: &mut String,
         suggestions: &mut Vec<String>,
-        line_number: &usize,
     ) {
-        if node.is_end_of_word && levenshtein(&current_word, &target_word) == 1 {
+        if node.is_end_of_word && damerau_levenshtein(&current_word, &target_word) == 1 {
             suggestions.push(current_word.clone());
         }
         for (&ch, next_node) in &node.child {
             current_word.push(ch);
-            self.trie_dfs(
-                next_node,
-                target_word,
-                current_word,
-                suggestions,
-                line_number,
-            );
+            self.trie_dfs(next_node, target_word, current_word, suggestions);
             current_word.pop();
         }
     }
@@ -71,10 +64,9 @@ impl SpellChecker {
                 suggestions.push(word.to_string());
                 self.trie_dfs(
                     &self.dictionary.root,
-                    &word,
+                    &word.to_lowercase(),
                     &mut current_word,
                     &mut suggestions,
-                    &index,
                 );
                 block.insert(suggestions.clone(), index);
             }
