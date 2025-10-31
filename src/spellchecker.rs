@@ -1,5 +1,6 @@
 // Local Imports
-use crate::algorithms::damerau_levenshtein;
+
+use crate::algorithms::fuzzy_damerau_levenshtein;
 use crate::utils::{Trie, TrieNode};
 
 // Functional Imports
@@ -16,7 +17,7 @@ pub struct SpellChecker {
 impl SpellChecker {
     pub fn new() -> Result<Self> {
         let mut set_dictionary: Trie = Trie::new();
-        let f = File::open("data/words_alpha.txt")?;
+        let f = File::open("/Users/skar3krow/Desktop/Projects/Sprust/data/words_alpha.txt")?;
         let lines = io::BufReader::new(f).lines();
         for line in lines {
             set_dictionary.insert(&line?);
@@ -33,7 +34,7 @@ impl SpellChecker {
         current_word: &mut String,
         suggestions: &mut Vec<String>,
     ) {
-        if node.is_end_of_word && damerau_levenshtein(&current_word, &target_word) == 1 {
+        if node.is_end_of_word && fuzzy_damerau_levenshtein(&current_word, &target_word) >= 0.8 {
             suggestions.push(current_word.clone());
         }
         for (&ch, next_node) in &node.child {
